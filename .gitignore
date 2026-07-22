@@ -21,3 +21,7 @@ rad.json
 *.flf
 #Test results file
 TestResults.xml
+
+### Secrets ###
+# Holds DJI license + MQTT password for pilot.html / m3m_dashboard.html. Never commit this.
+config.js
