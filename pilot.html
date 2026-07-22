@@ -26,7 +26,7 @@
 
 <div class="card">
     <h2>Custom Cloud Bridge</h2>
-    <p class="hint">Fill in your credentials once under <b>Connection settings</b> below (saved only in this browser). Open this page inside <b>DJI Pilot 2 &rarr; Cloud Services</b> and it will verify + connect automatically.</p>
+    <p class="hint">Credentials are set in the <b>CONFIG</b> block inside this file's code — you don't type anything here. Open this page inside <b>DJI Pilot 2 &rarr; Cloud Services</b> and it will verify + connect automatically.</p>
 
     <div class="cfg">
         <div><span>Broker</span> <b id="cfg-broker">&mdash;</b></div>
@@ -34,22 +34,6 @@
         <div><span>App ID</span> <b id="cfg-appid">&mdash;</b></div>
         <div><span>App License</span> <b id="cfg-license">&mdash;</b></div>
     </div>
-
-    <details style="margin-top:12px;">
-        <summary style="cursor:pointer; color:#8bd; font-size:13px;">Connection settings (saved only in this browser)</summary>
-        <div class="cfg" style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
-            <label>App ID <input type="text" id="in-appId" style="width:100%"></label>
-            <label>App Key <input type="text" id="in-appKey" style="width:100%"></label>
-            <label>App License <input type="text" id="in-appLicense" style="width:100%"></label>
-            <label>Workspace ID <input type="text" id="in-workspaceId" style="width:100%"></label>
-            <label>Broker Host <input type="text" id="in-brokerHost" style="width:100%"></label>
-            <label>Broker Port <input type="text" id="in-brokerPort" style="width:100%"></label>
-            <label><input type="checkbox" id="in-brokerTls" style="width:auto"> Broker uses TLS (ssl://)</label>
-            <label>MQTT Username <input type="text" id="in-mqttUser" style="width:100%"></label>
-            <label>MQTT Password <input type="password" id="in-mqttPass" style="width:100%"></label>
-        </div>
-        <button class="secondary" style="margin-top:8px;" onclick="saveSettingsFromForm()">Save Settings</button>
-    </details>
 
     <div id="bridgeStatus" class="status">Checking environment...</div>
 
@@ -80,68 +64,25 @@
 
 <script>
     /* ============================ CONFIG ============================
-       Credentials come from config.js (local dev only, gitignored) or from
-       the "Connection settings" form below, saved in this browser's
-       localStorage. Form values win over config.js.
+       Credentials now live in config.js (loaded above), NOT in this file.
+       Edit config.js to change the App ID/Key/License, broker, or MQTT login.
        ================================================================ */
     const _CFG = window.APP_CONFIG || {};
-
-    // Credentials typed into the "Connection settings" form are saved only in this browser's
-    // localStorage (never in the page source), so this file can be safely committed/deployed
-    // without leaking the App Key/License/MQTT password. Saved values win over config.js.
-    const SETTINGS_KEY = 'pilot_settings_v1';
-    function loadSavedSettings() {
-        try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null') || {}; } catch (e) { return {}; }
-    }
-    function buildConfig() {
-        const saved = loadSavedSettings();
-        return {
-            appId:       saved.appId || _CFG.appId || "",
-            appKey:      saved.appKey || _CFG.appKey || "",
-            appLicense:  saved.appLicense || _CFG.appLicense || "",
-            brokerHost:  saved.brokerHost || _CFG.brokerHost || "192.168.20.84",
-            brokerPort:  saved.brokerPort || _CFG.brokerPort || "1883",
-            brokerTls:   saved.brokerTls !== undefined ? saved.brokerTls : (_CFG.brokerTls || false),
-            mqttUser:    saved.mqttUser || _CFG.mqttUser || "",   // blank if broker allows anonymous
-            mqttPass:    saved.mqttPass || _CFG.mqttPass || "",
-            // Pilot 2 requires the workspace id to be a real UUID (it calls java.util.UUID.fromString
-            // on it). A non-UUID like "workspace-custom-001" throws IllegalArgumentException (615000)
-            // and aborts onboarding. Keep this a valid UUID; override via config.js or the form.
-            workspaceId: saved.workspaceId || _CFG.workspaceId || "a1b2c3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
-            autoConnect: true                   // verify + connect automatically once Pilot 2 loads this page
-        };
-    }
-    let CONFIG = buildConfig();
-
-    function populateSettingsForm() {
-        document.getElementById('in-appId').value = CONFIG.appId;
-        document.getElementById('in-appKey').value = CONFIG.appKey;
-        document.getElementById('in-appLicense').value = CONFIG.appLicense;
-        document.getElementById('in-workspaceId').value = CONFIG.workspaceId;
-        document.getElementById('in-brokerHost').value = CONFIG.brokerHost;
-        document.getElementById('in-brokerPort').value = CONFIG.brokerPort;
-        document.getElementById('in-brokerTls').checked = !!CONFIG.brokerTls;
-        document.getElementById('in-mqttUser').value = CONFIG.mqttUser;
-        document.getElementById('in-mqttPass').value = CONFIG.mqttPass;
-    }
-
-    function saveSettingsFromForm() {
-        const settings = {
-            appId:       document.getElementById('in-appId').value.trim(),
-            appKey:      document.getElementById('in-appKey').value.trim(),
-            appLicense:  document.getElementById('in-appLicense').value.trim(),
-            workspaceId: document.getElementById('in-workspaceId').value.trim(),
-            brokerHost:  document.getElementById('in-brokerHost').value.trim(),
-            brokerPort:  document.getElementById('in-brokerPort').value.trim(),
-            brokerTls:   document.getElementById('in-brokerTls').checked,
-            mqttUser:    document.getElementById('in-mqttUser').value.trim(),
-            mqttPass:    document.getElementById('in-mqttPass').value
-        };
-        try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {}
-        CONFIG = buildConfig();
-        renderConfigSummary();
-        setStatus('Settings saved in this browser. Tap Connect to apply.', '#0f0');
-    }
+    const CONFIG = {
+        appId:       _CFG.appId || "",
+        appKey:      _CFG.appKey || "",
+        appLicense:  _CFG.appLicense || "",
+        brokerHost:  _CFG.brokerHost || "192.168.20.84",
+        brokerPort:  _CFG.brokerPort || "1883",
+        brokerTls:   _CFG.brokerTls || false,
+        mqttUser:    _CFG.mqttUser || "",   // blank if broker allows anonymous
+        mqttPass:    _CFG.mqttPass || "",
+        // Pilot 2 requires the workspace id to be a real UUID (it calls java.util.UUID.fromString
+        // on it). A non-UUID like "workspace-custom-001" throws IllegalArgumentException (615000)
+        // and aborts onboarding. Keep this a valid UUID; override via config.js if you have one.
+        workspaceId: _CFG.workspaceId || "a1b2c3d4-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+        autoConnect: true                   // verify + connect automatically once Pilot 2 loads this page
+    };
     /* ================================================================ */
 
     let monitorTimer = null;
@@ -430,7 +371,6 @@
 
     window.addEventListener('load', function () {
         renderConfigSummary();
-        populateSettingsForm();
         restorePrevLog();     // show prior session + flag if Pilot 2 reloaded us
         wireLifecycle();      // log suspend/destroy events + connection state on background
         log('Page loaded at ' + new Date().toLocaleTimeString() + '. Tap "List Bridge API" to see what this Pilot 2 build exposes.', '#0ff');
