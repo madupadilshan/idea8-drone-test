@@ -113,6 +113,8 @@
     <div class="topbar">
         <h1><span class="dot">●</span> DJI M3M Operations</h1>
         <input type="text" id="brokerUrl" value="wss://mqtt.djidock.idea8.cloud:443/mqtt" style="width:260px">
+        <input type="text" id="mqttUserInput" placeholder="MQTT username" style="width:120px" oninput="saveCreds()">
+        <input type="password" id="mqttPassInput" placeholder="MQTT password" style="width:120px" oninput="saveCreds()">
         <button class="btn-connect" onclick="connectMQTT()">Connect</button>
         <button class="btn-disconnect btn-small" onclick="disconnectMQTT()">Disconnect</button>
         <label class="check"><input type="checkbox" id="ackMode" checked> Act as cloud (ack handshakes)</label>
@@ -573,6 +575,24 @@
         persistState();
     }
 
+    // ---- Credentials (typed once into this browser, kept only in localStorage — never in the
+    // page source, so this file can be safely committed/deployed without leaking the MQTT login) ----
+    const CREDS_KEY = 'm3m_dashboard_creds_v1';
+    function saveCreds() {
+        try {
+            localStorage.setItem(CREDS_KEY, JSON.stringify({
+                mqttUser: document.getElementById('mqttUserInput').value,
+                mqttPass: document.getElementById('mqttPassInput').value
+            }));
+        } catch (e) {}
+    }
+    function loadCreds() {
+        let creds = null;
+        try { creds = JSON.parse(localStorage.getItem(CREDS_KEY) || 'null'); } catch (e) {}
+        document.getElementById('mqttUserInput').value = (creds && creds.mqttUser) || CFG.mqttUser || '';
+        document.getElementById('mqttPassInput').value = (creds && creds.mqttPass) || CFG.mqttPass || '';
+    }
+
     // ---- Persistence ----
     const STORAGE_KEY = 'm3m_dashboard_state_v2';
     function persistState() {
@@ -991,8 +1011,8 @@
         const opts = { clientId: (CFG.clientPrefix || 'm3m') + '_dashboard_' + Math.random().toString(16).substr(2, 8) };
         // The cloud broker requires auth (it is NOT anonymous). Fall back to the backend
         // login if config.js doesn't override. For a local anonymous broker these are ignored.
-        opts.username = CFG.mqttUser || '';
-        opts.password = CFG.mqttPass || '';
+        opts.username = document.getElementById('mqttUserInput').value || CFG.mqttUser || '';
+        opts.password = document.getElementById('mqttPassInput').value || CFG.mqttPass || '';
         client = mqtt.connect(url, opts);
 
         client.on('connect', () => {
@@ -1090,6 +1110,7 @@
     // ---- Boot ----
     if (CFG.brokerWsUrl) document.getElementById('brokerUrl').value = CFG.brokerWsUrl;
     if (CFG.mediaHost) document.getElementById('mediaHost').value = CFG.mediaHost;
+    loadCreds();
     initMap();
     restoreState();
     refreshUrls();
